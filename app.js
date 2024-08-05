@@ -17,10 +17,10 @@ import {
 
 
 const form = document.querySelector(`#form`);
-const input = document.querySelector(`#firestore`);
+const todo = document.querySelector(`#todo`);
 const ul = document.querySelector(`#list`);
 const select = document.querySelector(`#select`);
-const cities = document.querySelectorAll(`.k1`);
+const citiesbtn = document.querySelectorAll(`.cities-btn`);
 const reset = document.querySelector(".reset"); 
 
 
@@ -33,11 +33,11 @@ let array = [];
 
 // CITIES DEFINE 
 
-cities.forEach((btn) => {
+citiesbtn.forEach((btn) => {
     btn.addEventListener("click", async (event) => {
       array = [];
       console.log(event.target.innerHTML);
-      const todosRef = collection(db, "posts");
+      const todosRef = collection(db, "todos");
       const q = query(
         todosRef,
         where("city", "==", event.target.innerHTML),
@@ -64,7 +64,7 @@ reset.addEventListener("CLICK" , getData);
 
     async function getData(){
         array = [];
-        const q = query(collection(db , "posts") , orderBy("time" , "desc"));
+        const q = query(collection(db , "todos") , orderBy("time" , "desc"));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
             array.push({ ...doc.data() , id: doc.id });
@@ -72,6 +72,8 @@ reset.addEventListener("CLICK" , getData);
         console.log(array);
         renderTodo();       
     }
+
+getData();
 
 
 
@@ -84,20 +86,20 @@ function renderTodo(){
 
     ul.innerHTML = "";
     if(array.length === 0){
-        ul.innerHTML = "";
+        ul.innerHTML = "no data found";
         return;
     }
 
     array.map((item) => {
         ul.innerHTML += `
-        <li>${item.posts}</li>
+        <li>${item.todo}</li>
         <button class="deleteBtn btn btn-primary">Delete</button>
         <button class="editBtn btn btn-primary">Edit</button>
-        <p>${item.time ? item.time.toDate() : ""}</p>
+        <p>${item.time ? item.time.toDate() : "no time"}</p>
         <hr>
         `;
     });
-};
+
 
 
 
@@ -106,8 +108,8 @@ function renderTodo(){
 
 // Delete and Edit Button
 
-const deletebtn = document.querySelectorAll(`#delete`);
-const editbtn = document.querySelectorAll(`#edit`);
+const deletebtn = document.querySelectorAll(`.deletebtn`);
+const editbtn = document.querySelectorAll(`.editbtn`);
 
 // Delete Button
 
@@ -115,7 +117,7 @@ const editbtn = document.querySelectorAll(`#edit`);
 deletebtn.forEach((btn , index) => {
     btn.addEventListener("click" , async () => {
     console.log(array[index]);
-    await deleteDoc(doc(db , "posts" , array[index].id));
+    await deleteDoc(doc(db , "todos" , array[index].id));
     console.log("Data Deleted");
     array.splice(index , 1);
     renderTodo();
@@ -131,37 +133,40 @@ deletebtn.forEach((btn , index) => {
 editbtn.forEach((btn , index) => {
     btn.addEventListener("click" , async () => {
         const updatedNewValue = prompt("Enter New Value");
-        const todoUpdate = doc(db , "posts" , array[index].id);
+        const todoUpdate = doc(db , "todos" , array[index].id);
         await updateDoc(todoUpdate , {
-        posts:updatedNewValue,
+        todo:updatedNewValue,
         });
         console.log("Data Updated");
-        array[index].posts = updatedNewValue;
+        array[index].todo = updatedNewValue;
         renderTodo();
     });
 });
 
 
-
+};
 
 
 
 
 form.addEventListener(`submit` , async (event) => {
     event.preventDefault();
-    array.push({
-        input: input.value
-    });
-    renderTodo();
+
     try {
-        const docRef = await addDoc(collection(db, "posts"), {
-        input: input.value,
+        const docRef = await addDoc(collection(db, "todos"), {
+        todo: todo.value,
+        city: select.value,
+        time: Timestamp.fromDate(new Date()),
         });
-        input.value = ``;
         console.log("Document written with ID: ", docRef.id);
+        array.push({
+          todo: todo.value,
+          id: docRef.id,
+          city: select.value,
+        });
+        renderTodo();
+        todo.value = ``;
       } catch (e) {
         console.error("Error adding document: ", e);
-      }
-    
-    
+      }   
 });
